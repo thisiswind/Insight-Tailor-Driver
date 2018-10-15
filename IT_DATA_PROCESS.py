@@ -70,4 +70,4 @@ b="""362 |Req-O-OP:6538#Verizon-Wireless         |Req-D-OP:6818#Radiomovil-TELCE
      53 |Req-O-OP:6538#Verizon-Wireless         |Req-D-OP:6912#Compania-Dominicana      |Fw-Ans-RstCode:null|Fw-Ans-ExpRstCode:5004|Fw-Ans-ErrMsg:null"""
 
 #print(IT_DATA_PROCESS_str_transform_2_2d_list(a,"\n"," ",5))
-print(IT_DATA_PROCESS_str_transform_2_2d_list(b,"\n","|",5))
+#print(IT_DATA_PROCESS_str_transform_2_2d_list(b,"\n","|",5))

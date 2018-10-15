@@ -1,4 +1,4 @@
-c:/Python/python "IT_DATA_PROCESS.py"
+c:/Python/python "IT_XML&DB&CSV.py"
 
 pause
 del "%0"
