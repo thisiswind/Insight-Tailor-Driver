@@ -1,40 +1,12 @@
-"""*************************************************************************************************
-====FILE
-	IT_OS_get_user_passwd_with_dialog(credential_dir_filename="")
-
-
-====DATE TIME
-	IT_OS_get_8_digit_GMT_date(delta_day)
-
-
-====COMMUNICATION PROTOCOL
-	IT_OS_SSH(host,port,user,pwd,command)
-	IT_OS_sftp_download(host,port,username,password,local,remote)
-	IT_OS_sftp_upload(host,port,username,password,local,remote)
-
-
-
-Last Modified by:
-Wind 20181010
-*************************************************************************************************"""
-
-"""====FILE**************************************************************************************"""
-
-
-
-"""*************************************************************************************************
-IT_OS_get_user_passwd_with_dialog(credential_dir_filename="")
-if credential_dir_filename ="" ,it will open dialog and obtain user, pwd if they are not empty
-if credential_dir_filename !="":
-if credential_dir_filename is valid format, it will return user and pwd read from file
-if credential_dir_filename is invalid format or not exist,it will trigger dialog to get user,pwd
-return the value and update credential_dir_filename
-if path in credential_dir_filename does not exist, it will prompt error and return["",""]
-
-outputformat:[user,pwd]
-
-20181017 Wind
-*************************************************************************************************"""
+import tkinter
+import tkinter.messagebox
+import os
+import os.path
+import requests
+import sys
+from requests_ntlm import HttpNtlmAuth
+import datetime,time
+GMT_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
 def IT_OS_get_user_passwd_with_dialog(credential_dir_filename=""):
 	import os,os.path,tkinter,sys
 	import tkinter.messagebox
@@ -122,127 +94,14 @@ def IT_OS_get_user_passwd_with_dialog(credential_dir_filename=""):
 				output.write(user+' '+pwd)
 				output.close()
 				return([user,pwd])
-	
-#print (IT_OS_get_user_passwd_with_dialog('C:\\python_work\\userinfo.txt'))
-print (IT_OS_get_user_passwd_with_dialog())
-#print (IT_OS_get_user_passwd_with_dialog("\\c.txt"))			
-
-"""====DATE TIME*********************************************************************************"""
-
-"""*************************************************************************************************
-IT_OS_get_8_digit_GMT_date returns date in 8 digital format like 20181010
-if need local time, replace gmtime with localtime in code
-to get today, delta_day=0
-to get yesterday, delta_day=-1
-
-Wind 20181010
-*************************************************************************************************"""
-def IT_OS_get_8_digit_GMT_date(delta_day):
-	import time
-
-	year=str(time.gmtime(time.time()+24*60*60*delta_day).tm_year)
-	month=str(time.gmtime(time.time()+24*60*60*delta_day).tm_mon)
-	if len(month)==1:
-		month="0"+month		
-	day=str(time.gmtime(time.time()+24*60*60*delta_day).tm_mday)
-	if len(day)==1:
-		day="0"+day		
-	timestamp=year+month+day
-	return(timestamp)
-	
-#print(IT_OS_get_8_digit_GMT_date(-1))
-
-
-'''***************COMMUNICATION PROTOCOL****************************************************************'''
-
-def IT_OS_SSH(host,port,user,pwd,command):
-	import paramiko
-	ssh = paramiko.SSHClient()
-	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-	ssh.connect(hostname=host,port=port, username=user, password=pwd)
-	stdin, stdout, stderr = ssh.exec_command(command)
-	res,err = stdout.read(),stderr.read()
-	result = res if res else err
-	dirresult=result.decode().rstrip().lstrip()
-	return(dirresult)
-	
-#print(IT_OS_SSH('10.162.28.187',22,'g707414','%password','netstat -an'))
-
-
-"""*******************************************************************************************************
-IT_OS_sftp_download(host,port,username,password,local,remote)
-#host='10.162.28.182'
-#port = 22 
-#username='g707414'
-#password='XXXXXX'
-#local = 'C:\\sftptest\\test'#本地文件或目录，与远程一致，当前为windows目录格式，window目录中间需要使用双斜线
-#remote = '/home/g707414/'#远程文件或目录，与本地一致，当前为linux目录格式,取远程目录下所有文件
-#remote = '/home/g707414/diameter-dsc.xml'#远程文件或目录，与本地一致，当前为linux目录格式
-
-#sftp_upload(host,port,username,password,local,remote)#上传
-#sftp_download(host,port,username,password,local,remote)#下载
-
-Version: v1.0 2018.10.12
-
-*******************************************************************************************************"""
-def IT_OS_sftp_download(host,port,username,password,local,remote):
-	import paramiko,os,platform,stat
-
-	sf = paramiko.Transport((host,port))
-	sf.connect(username = username,password = password)
-	sftp = paramiko.SFTPClient.from_transport(sf)
-	try:
-		if os.path.isdir(local):#判断本地参数是目录还是文件
-			print("dir is local")
-			for f in sftp.listdir(remote):#遍历远程目录
-				print(f)
-				sftp.get(os.path.join(remote+f),os.path.join(local+f))#下载目录中文件
-				#sftp.get('.kshrc',os.path.join(local+f))#下载目录中文件
-		else:
-			sftp.get(remote,local)#下载文件
-	except Exception as e:
-		print('download exception:',e)
-	sf.close()
-	
-
-"""*******************************************************************************************************
-IT_OS_sftp_upload(host,port,username,password,local,remote)
-not tested yet
-20181012
-*******************************************************************************************************"""
-
-
-def IT_OS_sftp_upload(host,port,username,password,local,remote):
-	import paramiko
-	import os
-	import platform
-	import stat
-	sf = paramiko.Transport((host,port))
-	sf.connect(username = username,password = password)
-	sftp = paramiko.SFTPClient.from_transport(sf)
-	try:
-		if os.path.isdir(local):#判断本地参数是目录还是文件
-			for f in os.listdir(local):#遍历本地目录
-				sftp.put(os.path.join(local+f),os.path.join(remote+f))#上传目录中的文件
-		else:
-			sftp.put(local,remote)#上传文件
-	except Exception as e:
-		print('upload exception:',e)
-	sf.close()
-
 
 """*************************************************************************************************
 IT_OS_fileupdate_from_sharepoint download file from sharepoint url if local file does not exist
 or local file is older than file on sharepoint.
-
 If user,pwd is not corrrect and credential_file_dir_name!="", it will delete credential_file_dir_name 
 and call IT_OS_get_user_passwd_with_dialog(credential_file_dir_name) to reget user and pwd repeatedly
-until credential is correct or ["",""] is returned by IT_OS_get_user_passwd_with_dialog(canceled).
-
-If user,pwd is not corrrect and credential_file_dir_name=="",it will call call 
-IT_OS_get_user_passwd_with_dialog() repeatedly until credential is correct or ["",""] is returned by 
-IT_OS_get_user_passwd_with_dialog(canceled).
-
+until credential is correct or ["",""] is returned by IT_OS_get_user_passwd_with_dialog(canceled)
+If user,pwd is not corrrect and credential_file_dir_name==""
 This function is developed by Greg and updated by Wind
 
 20181017 Greg/Wind
@@ -357,6 +216,9 @@ def IT_OS_fileupdate_from_sharepoint(user,pwd,url1,output_file_name_path,credent
 		root1.withdraw()
 		tkinter.messagebox.showinfo('Information', output_file+" is updated successful.")
 
+
+
+
 #IT_OS_fileupdate_from_sharepoint ('g707414','#Bisctac','http://central.syniverse.com/sites/TECH/io/ipxop/ts/Shared%20Documents/DSS/Tools/file/PeeringPolicy.csv','\\PeeringPolicy.csv','\\c.txt')
-#IT_OS_fileupdate_from_sharepoint ('g707414','#Bisctac','http://central.syniverse.com/sites/TECH/io/ipxop/ts/Shared%20Documents/DSS/Tools/file/PeeringPolicy.csv','\\PeeringPolicy.csv')
+IT_OS_fileupdate_from_sharepoint ('g707414','#Bisctac','http://central.syniverse.com/sites/TECH/io/ipxop/ts/Shared%20Documents/DSS/Tools/file/PeeringPolicy.csv','\\PeeringPolicy.csv')
 

@@ -1,4 +1,4 @@
-c:/Python/python "IT_OFFICE.py"
+c:/Python/python "IT_OS.py"
 
 pause
 del "%0"

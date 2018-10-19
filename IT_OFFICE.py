@@ -132,5 +132,5 @@ email_body=email_body.replace('REALM_B',"epc222")
 
 
 #IT_OFFICE_sendemail ('greg.zhai@syniverse.com;','ts-dss@syniverse.com', 'Test Email',email_body,'\IT_OFFICE.py')
-IT_OFFICE_send_plain_mail ('greg.zhai@syniverse.com;jason.qin@syniverse.com;joe.feng@syniverse.com','wind.wang@syniverse.com;ts-dss@syniverse.com', 'Test Email','This Email is sent using Python script')
+#IT_OFFICE_send_plain_mail ('greg.zhai@syniverse.com;jason.qin@syniverse.com;joe.feng@syniverse.com','wind.wang@syniverse.com;ts-dss@syniverse.com', 'Test Email','This Email is sent using Python script')
 
