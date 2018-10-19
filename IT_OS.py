@@ -20,7 +20,29 @@ Wind 20181010
 
 """====FILE**************************************************************************************"""
 
+"""*************************************************************************************************
+get_file_path_name enable windows user to locate and select a file in dialog window and return the
+file path and file name as a list
+initial_dir specified where the system start to browse, it can be eigher absolute director like
+"C:\\DATA" or relative directory like "\\DATA"
 
+Wind 20180924
+*************************************************************************************************"""
+def IT_OS_get_file_path_name(initial_dir="\\"):
+	import time,os.path, os,shutil,tkinter.filedialog
+	if initial_dir[0].isalpha()==False:#Not start like c:
+		initial_dir=os.getcwd()+initial_dir
+	root1=tkinter.Tk()
+	root1.withdraw()
+	full_name=tkinter.filedialog.askopenfilename(title="Choose File",\
+	initialdir=(os.path.expanduser(initial_dir)))
+	root1.destroy()
+	file_path=os.path.split(full_name)[0]
+	file_name=os.path.split(full_name)[1]
+	return([file_path,file_name])
+
+print (IT_OS_get_file_path_name("\\file\\msu_report"))
+#print (IT_OS_get_file_path_name("C:\\file\\msu_report"))
 
 """*************************************************************************************************
 IT_OS_get_user_passwd_with_dialog(credential_dir_filename="")
@@ -124,7 +146,7 @@ def IT_OS_get_user_passwd_with_dialog(credential_dir_filename=""):
 				return([user,pwd])
 	
 #print (IT_OS_get_user_passwd_with_dialog('C:\\python_work\\userinfo.txt'))
-print (IT_OS_get_user_passwd_with_dialog())
+#print (IT_OS_get_user_passwd_with_dialog())
 #print (IT_OS_get_user_passwd_with_dialog("\\c.txt"))			
 
 """====DATE TIME*********************************************************************************"""
