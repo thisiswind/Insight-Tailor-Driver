@@ -1,5 +1,6 @@
 """*************************************************************************************************
 ====FILE
+	IT_OS_get_file_path_name(initial_dir="\\")
 	IT_OS_get_user_passwd_with_dialog(credential_dir_filename="")
 
 
@@ -11,18 +12,23 @@
 	IT_OS_SSH(host,port,user,pwd,command)
 	IT_OS_sftp_download(host,port,username,password,local,remote)
 	IT_OS_sftp_upload(host,port,username,password,local,remote)
+	
+	
+====SHARE POINT
+	IT_OS_test_credential_by_sharepoint(user,pwd,test_url='http://central.syniverse.com/Pages/home.aspx')
+	IT_OS_fileupdate_from_sharepoint(user,pwd,url,output_file_name_path)
 
 
 
 Last Modified by:
-Wind 20181010
+Wind 20181030
 *************************************************************************************************"""
 
 """====FILE**************************************************************************************"""
 
 """*************************************************************************************************
 get_file_path_name enable windows user to locate and select a file in dialog window and return the
-file path and file name as a list
+full_name (path&file name)file path and file name as a list
 initial_dir specified where the system start to browse, it can be eigher absolute director like
 "C:\\DATA" or relative directory like "\\DATA"
 
@@ -39,9 +45,9 @@ def IT_OS_get_file_path_name(initial_dir="\\"):
 	root1.destroy()
 	file_path=os.path.split(full_name)[0]
 	file_name=os.path.split(full_name)[1]
-	return([file_path,file_name])
+	return([full_name,file_path,file_name])
 
-print (IT_OS_get_file_path_name("\\file\\msu_report"))
+#print (IT_OS_get_file_path_name("\\file\\msu_report"))
 #print (IT_OS_get_file_path_name("C:\\file\\msu_report"))
 
 """*************************************************************************************************
@@ -253,41 +259,43 @@ def IT_OS_sftp_upload(host,port,username,password,local,remote):
 	sf.close()
 
 
+'''***************SHARE POINT **************************************************************************'''
+
+
+
 """*************************************************************************************************
-IT_OS_fileupdate_from_sharepoint download file from sharepoint url if local file does not exist
-or local file is older than file on sharepoint.
-
-If user,pwd is not corrrect and credential_file_dir_name!="", it will delete credential_file_dir_name 
-and call IT_OS_get_user_passwd_with_dialog(credential_file_dir_name) to reget user and pwd repeatedly
-until credential is correct or ["",""] is returned by IT_OS_get_user_passwd_with_dialog(canceled).
-
-If user,pwd is not corrrect and credential_file_dir_name=="",it will call call 
-IT_OS_get_user_passwd_with_dialog() repeatedly until credential is correct or ["",""] is returned by 
-IT_OS_get_user_passwd_with_dialog(canceled).
+IT_OS_test_credential_by_sharepoint verify username and password by trying to open the test_url 
+on sharepoint by HttpNtlAuth.
+If user and pwd are correct, it will return True.
+If user and pwd are not correct, it will return False.
+If other error meet like url error, it will prompt error and exist.
+If the result code is unexpected, it will return result code
 
 This function is developed by Greg and updated by Wind
 
 20181017 Greg/Wind
 *************************************************************************************************"""
 
-def IT_OS_fileupdate_from_sharepoint(user,pwd,url1,output_file_name_path,credential_dir_filename=""):
+
+def IT_OS_test_credential_by_sharepoint(user,pwd,test_url='http://central.syniverse.com/Pages/home.aspx'):
+#def IT_OS_test_credential_by_sharepoint(user,pwd,test_url='http://central.syniverse.com/sites/TECH/io/ipxop/ts/SitePages/\Home.aspx?RootFolder=%2Fsites%2FTECH%2Fio%2Fipxop%2Fts%2FShared%20Documents%2FDSS&FolderCTID=0x01200020732C84BD8D4E4DAD0B19CE7DD0F3AD&View={DDDFFD5D-4EF8-4A45-8F9B-14E88271D54B}'):
+
 	import tkinter,tkinter.messagebox,os,os.path,requests,sys,datetime,time
 	from requests_ntlm import HttpNtlmAuth
-	GMT_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
 
 	try:
-		r1=requests.get(url1,auth=HttpNtlmAuth(user,pwd))
+		r1=requests.get(test_url,auth=HttpNtlmAuth(user,pwd))
 	except requests.exceptions.ConnectionError:
 		print ('Connection error, URL address not found, please check URL.\n')
 		root1=tkinter.Tk()
 		root1.withdraw()
-		tkinter.messagebox.showwarning('Warning', 'Connection error, URL address not found, please check URL.')
+		tkinter.messagebox.showwarning('Warning', 'Connection error, URL address not found, please check URL.'+test_url)
 		sys.exit()
 	except requests.exceptions.MissingSchema:
-		print ('Invalid URL '+url1+' : No schema supplied. Perhaps you meant http://'+ url1+'?\n')
+		print ('Invalid URL '+test_url+' : No schema supplied. Perhaps you meant http://'+ test_url+'?\n')
 		root1=tkinter.Tk()
 		root1.withdraw()
-		tkinter.messagebox.showwarning('Warning', 'Invalid URL '+url1+' : No schema supplied. Perhaps you meant http://'+ url1+'?\n')
+		tkinter.messagebox.showwarning('Warning', 'Invalid URL '+test_url+' : No schema supplied. Perhaps you meant http://'+ test_url+'?\n')
 		sys.exit()
 	else:
 		res1= r1.status_code
@@ -299,33 +307,66 @@ def IT_OS_fileupdate_from_sharepoint(user,pwd,url1,output_file_name_path,credent
 		print ('No file in the URL, please double check URL.\n\n')
 		sys.exit()
 		return()
-	while res1==401:
+	if res1==401:
 		root1=tkinter.Tk()
 		root1.withdraw()
 		tkinter.messagebox.showwarning('Warning','User name or password incorrect.')
 		root1.destroy()
 
-		if credential_dir_filename!="":
-			if credential_dir_filename[0].isalpha()==False:#Not start like c
-				credential_dir_filename=os.getcwd()+credential_dir_filename
-			try:
-				os.remove(credential_dir_filename)
-			except:
-				root1=tkinter.Tk()
-				root1.withdraw()
-				tkinter.messagebox.showwarning('Cannot locate credential_dir_filename',credential_dir_filename)
-				root1.destroy()
-				return()
-		
-		info=IT_OS_get_user_passwd_with_dialog(credential_dir_filename)
-		user= info[0]
-		pwd=info[1]
-		if user=="" and pwd=="":#canceled
-			return()
-		r1=requests.get(url1,auth=HttpNtlmAuth(user,pwd))
+		return(False)
+	if res1==200:
+		return(True)
+	return(resl)
+#print(IT_OS_test_credential_by_sharepoint('g707414','XXXXXXX'))
+
+
+"""*************************************************************************************************
+IT_OS_fileupdate_from_sharepoint download file from sharepoint url if local file does not exist
+or local file is older than file on sharepoint.
+
+If user,pwd,url or the directory of output_file_name_path, this function will quit with prompt
+
+This function is developed by Greg and updated by Wind
+
+20181030 Greg/Wind
+*************************************************************************************************"""
+
+def IT_OS_fileupdate_from_sharepoint(user,pwd,url,output_file_name_path):
+	import tkinter,tkinter.messagebox,os,os.path,requests,sys,datetime,time
+	from requests_ntlm import HttpNtlmAuth
+	GMT_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
+#check if user,pwd,url are valid
+	try:
+		r1=requests.get(url,auth=HttpNtlmAuth(user,pwd))
+	except requests.exceptions.ConnectionError:
+		print ('Connection error, URL address not found, please check URL.\n')
+		root1=tkinter.Tk()
+		root1.withdraw()
+		tkinter.messagebox.showwarning('Warning', 'Connection error, URL address not found, please check URL.')
+		sys.exit()
+	except requests.exceptions.MissingSchema:
+		print ('Invalid URL '+url+' : No schema supplied. Perhaps you meant http://'+ url+'?\n')
+		root1=tkinter.Tk()
+		root1.withdraw()
+		tkinter.messagebox.showwarning('Warning', 'Invalid URL '+url+' : No schema supplied. Perhaps you meant http://'+ url+'?\n')
+		sys.exit()
+	else:
 		res1= r1.status_code
-
-
+# process different HTTP reponse codes 
+	if res1==404:
+		root1=tkinter.Tk()
+		root1.withdraw()
+		tkinter.messagebox.showwarning('Warning','No file in the URL, please double check URL.')
+		print ('No file in the URL, please double check URL.\n\n')
+		sys.exit()
+		return()
+	if res1==401:
+		root1=tkinter.Tk()
+		root1.withdraw()
+		tkinter.messagebox.showwarning('Warning','User name or password incorrect.')
+		root1.destroy()
+		return()
+		
 	if output_file_name_path[0].isalpha()==False:#Not start like c
 		output_file_name_path=os.getcwd()+output_file_name_path
 		
@@ -343,11 +384,11 @@ def IT_OS_fileupdate_from_sharepoint(user,pwd,url1,output_file_name_path,credent
 	c1=r1.headers
 	time1=datetime.datetime.strptime(c1 ['Last-Modified'], GMT_FORMAT)
 	timeArray1 = time.strptime(str(time1), "%Y-%m-%d %H:%M:%S")
-	url1timestamp = int(time.mktime(timeArray1))
+	urltimestamp = int(time.mktime(timeArray1))
 	
 # if the file in target directory does not exit, download file dircetly from url
 	if not os.path.exists(output_file_name_path):		
-		print (output_file+" dose not exist. Start downloading "+ output_file +" from provided URL1\n")
+		print (output_file+" dose not exist. Start downloading "+ output_file +" from provided url\n")
 		root1=tkinter.Tk()
 		root1.withdraw()
 		tkinter.messagebox.showinfo('Information', output_file+" dose not exist. Start downloading "+ output_file +" from provided URL.")
@@ -361,10 +402,9 @@ def IT_OS_fileupdate_from_sharepoint(user,pwd,url1,output_file_name_path,credent
 
 # if file exits, get the local file's modification time
 	output_filetimestamp=int(os.path.getmtime(output_file_name_path))
-	#print ('file time')
-	#print (output_filetimestamp)
+
 # if local file is older than url file, start updating file
-	if output_filetimestamp > url1timestamp:
+	if output_filetimestamp > urltimestamp:
 		print ("The "+output_file +" in your local directory is the lastest version.\n")
 
 	else:
@@ -379,6 +419,4 @@ def IT_OS_fileupdate_from_sharepoint(user,pwd,url1,output_file_name_path,credent
 		root1.withdraw()
 		tkinter.messagebox.showinfo('Information', output_file+" is updated successful.")
 
-#IT_OS_fileupdate_from_sharepoint ('g707414','#Bisctac','http://central.syniverse.com/sites/TECH/io/ipxop/ts/Shared%20Documents/DSS/Tools/file/PeeringPolicy.csv','\\PeeringPolicy.csv','\\c.txt')
-#IT_OS_fileupdate_from_sharepoint ('g707414','#Bisctac','http://central.syniverse.com/sites/TECH/io/ipxop/ts/Shared%20Documents/DSS/Tools/file/PeeringPolicy.csv','\\PeeringPolicy.csv')
-
+#IT_OS_fileupdate_from_sharepoint ('g707414','XXXXXX','http://central.syniverse.com/sites/TECH/io/ipxop/ts/Shared%20Documents/DSS/Tools/file/PeeringPolicy.csv','\\PeeringPolicy.csv')
